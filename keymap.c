@@ -3,6 +3,8 @@
 #include "action_layer.h"
 #include "version.h"
 
+#include <print.h>
+
 #define BASE 0 // default layer
 #define SYMB 1 // symbols
 #define NUMS 2 // control keys (and numpad on left side)
@@ -23,8 +25,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_F14,
     KC_TRNS,KC_Q,KC_W,KC_E,KC_R,KC_T,KC_F13,
     KC_TAB,KC_A,KC_S,KC_D,KC_F,KC_G,
-    OSM(MOD_LSFT),OSL(1),KC_X,KC_C,KC_V,KC_B,KC_F12,
-    MON_SHIFT,TG(3),KC_TRNS,KC_TRNS,KC_LGUI,
+    MON_SHIFT,OSL(1),KC_X,KC_C,KC_V,KC_B,KC_F12,
+    OSM(MOD_LSFT),TG(3),KC_TRNS,KC_TRNS,KC_LGUI,
 
     // thumb cluster
     KC_F15,KC_F16,KC_F17,

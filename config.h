@@ -16,6 +16,7 @@
 // #define NO_DEBUG
 #undef NO_PRINT
 #define USER_PRINT
+#define CONSOLE_ENABLE
 
 // how long before a tap becomes a hold
 #undef TAPPING_TERM
