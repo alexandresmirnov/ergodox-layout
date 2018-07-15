@@ -148,36 +148,53 @@ uint16_t mon_shift_second_press_time = 0;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
-  if(!mon_shift_held && key_pressed){
+  if(!mon_shift_held && !mon_shift_toggled_on && key_pressed){
     unregister_code(KC_LSFT);
     mon_shift_on = false;
     key_pressed = false;
+    ergodox_right_led_3_off();
   }
 
   switch (keycode) {
     
     case MON_SHIFT:
       if (record->event.pressed) {
+        // not on yet
         if(!mon_shift_on){
           register_code(KC_LSFT);
           mon_shift_on = true;
           mon_shift_held = true;
           mon_shift_first_press_time = record->event.time;
+
+          ergodox_right_led_3_on();
         }
+        // already on
         else {
           mon_shift_second_press_time = record->event.time; 
 
-          // if greater than timeout, cancel
-          if(mon_shift_second_press_time - mon_shift_first_press_time > 2000){
+          // toggled on, so cancel it
+          if(mon_shift_toggled_on){
             unregister_code(KC_LSFT);
             mon_shift_on = false;
             mon_shift_held = false;
             mon_shift_toggled_on = false;
+            ergodox_right_led_3_off();
           }
-          // if less than timeout (double tap) toggle it on
           else {
-            mon_shift_on = true;
-            mon_shift_toggled_on = true;
+            // if greater than timeout, cancel the one shot situation
+            if(mon_shift_second_press_time - mon_shift_first_press_time > 1000){
+              unregister_code(KC_LSFT);
+              mon_shift_on = false;
+              mon_shift_held = false;
+              mon_shift_toggled_on = false;
+              ergodox_right_led_3_off();
+            }
+            // if less than timeout (double tap) toggle it on
+            else {
+              ergodox_right_led_3_on();
+              mon_shift_on = true;
+              mon_shift_toggled_on = true;
+            }
           }
         }
       }
@@ -190,10 +207,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         // released from held mode
         else {
           mon_shift_held = false;
+
           if(key_pressed){
             unregister_code(KC_LSFT);
             mon_shift_on = false;
             key_pressed = false;
+            ergodox_right_led_3_off();
           }
         }
       }
