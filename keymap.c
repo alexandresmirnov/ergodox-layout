@@ -5,30 +5,30 @@
 
 #define BASE 0 // default layer
 #define SYMB 1 // symbols
-#define MDIA 2 // media keys
+#define NUMS 2 // control keys (and numpad on left side)
+#define OVERWATCH 3 // overwatch layer
 
 enum custom_keycodes {
   PLACEHOLDER = SAFE_RANGE, // can always be here
-  EPRM,
-  VRSN,
-  RGB_SLD
+  MON_SHIFT, // monitored shift; identical to shift, except stores current state
+  SPACE_ENTER
 };
 
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
-  [0] = LAYOUT_ergodox(
+  [BASE] = LAYOUT_ergodox(
 
     // left hand
     KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_F14,
     KC_TRNS,KC_Q,KC_W,KC_E,KC_R,KC_T,KC_F13,
     KC_TAB,KC_A,KC_S,KC_D,KC_F,KC_G,
     OSM(MOD_LSFT),OSL(1),KC_X,KC_C,KC_V,KC_B,KC_F12,
-    OSM(MOD_LCTL),TG(3),KC_TRNS,KC_TRNS,KC_LGUI,
+    MON_SHIFT,TG(3),KC_TRNS,KC_TRNS,KC_LGUI,
 
     // thumb cluster
     KC_F15,KC_F16,KC_F17,
-    KC_SPACE,KC_LCTL,KC_LALT,
+    SPACE_ENTER,KC_LCTL,KC_LALT,
     
     // right hand
     KC_DELETE,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_MINUS,
@@ -42,7 +42,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   
   ),
 
-  [1] = LAYOUT_ergodox(
+  [SYMB] = LAYOUT_ergodox(
     // left hand
     KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
     KC_TRNS,KC_TRNS,KC_KP_ASTERISK,KC_LCBR,KC_RCBR,KC_DLR,KC_TRNS,
@@ -66,7 +66,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   
   ),
 
-  [2] = LAYOUT_ergodox(
+  [NUMS] = LAYOUT_ergodox(
     // left hand
     KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
     KC_TRNS,KC_TRNS,KC_7,KC_8,KC_9,KC_TRNS,KC_TRNS,
@@ -90,7 +90,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_TRNS,KC_TRNS,KC_TRNS
   ),
 
-  [3] = LAYOUT_ergodox(
+  [OVERWATCH] = LAYOUT_ergodox(
     // left hand
     KC_ESCAPE,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
     KC_TAB,KC_Q,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_Y,
@@ -122,48 +122,111 @@ const uint16_t PROGMEM fn_actions[] = {
     [1] = ACTION_LAYER_TAP_TOGGLE(SYMB)                // FN1 - Momentary Layer 1 (Symbols)
 };
 
+
+ 
+
 const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
 {
-  // MACRODOWN only works in this function
   switch(id) {
     case 0:
       if (record->event.pressed) {
-        SEND_STRING (QMK_KEYBOARD "/" QMK_KEYMAP " @ " QMK_VERSION);
-      }
-      break;
-    case 1:
-      if (record->event.pressed) { // For resetting EEPROM
-        eeconfig_init();
       }
       break;
   }
   return MACRO_NONE;
 };
 
+
+bool mon_shift_on = false;
+bool mon_shift_held = false;
+bool key_pressed = false;
+
+bool mon_shift_toggled_on = false;
+
+uint16_t mon_shift_first_press_time = 0; 
+uint16_t mon_shift_second_press_time = 0; 
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+
+  if(!mon_shift_held && key_pressed){
+    unregister_code(KC_LSFT);
+    mon_shift_on = false;
+    key_pressed = false;
+  }
+
   switch (keycode) {
-    // dynamically generate these.
-    case EPRM:
+    
+    case MON_SHIFT:
       if (record->event.pressed) {
-        eeconfig_init();
+        if(!mon_shift_on){
+          register_code(KC_LSFT);
+          mon_shift_on = true;
+          mon_shift_held = true;
+          mon_shift_first_press_time = record->event.time;
+        }
+        else {
+          mon_shift_second_press_time = record->event.time; 
+
+          // if greater than timeout, cancel
+          if(mon_shift_second_press_time - mon_shift_first_press_time > 2000){
+            unregister_code(KC_LSFT);
+            mon_shift_on = false;
+            mon_shift_held = false;
+            mon_shift_toggled_on = false;
+          }
+          // if less than timeout (double tap) toggle it on
+          else {
+            mon_shift_on = true;
+            mon_shift_toggled_on = true;
+          }
+        }
+      }
+      // released
+      else {
+        // if it's just been toggled on (this block will execute after second tap in double tap
+        if(mon_shift_toggled_on){
+
+        }
+        // released from held mode
+        else {
+          mon_shift_held = false;
+          if(key_pressed){
+            unregister_code(KC_LSFT);
+            mon_shift_on = false;
+            key_pressed = false;
+          }
+        }
+      }
+
+      return false;
+      break;
+
+    case SPACE_ENTER:
+      if (record->event.pressed) {
+        if(mon_shift_on){
+          register_code(KC_ENTER);
+          key_pressed = true;
+        }
+        else{
+          register_code(KC_SPACE);
+        }
+      }
+      else{
+        unregister_code(KC_SPACE);
+        unregister_code(KC_ENTER);
       }
       return false;
       break;
-    case VRSN:
-      if (record->event.pressed) {
-        SEND_STRING (QMK_KEYBOARD "/" QMK_KEYMAP " @ " QMK_VERSION);
+
+    default:
+      if(mon_shift_on){
+        key_pressed = true;
       }
-      return false;
-      break;
-    case RGB_SLD:
-      if (record->event.pressed) {
-        #ifdef RGBLIGHT_ENABLE
-          rgblight_mode(1);
-        #endif
-      }
-      return false;
       break;
   }
+
+  
+
   return true;
 }
 
