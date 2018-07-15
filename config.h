@@ -6,7 +6,7 @@
 
 // how many taps before triggering the toggle
 #undef ONESHOT_TAP_TOGGLE
-#define ONESHOT_TAP_TOGGLE 1
+#define ONESHOT_TAP_TOGGLE 2
 
 // how long before oneshot modifier key times out (currently only shift)
 #undef ONESHOT_TIMEOUT
@@ -26,3 +26,4 @@
 
 // tap anyway, even after TAPPING_TERM, if there was no other key interruption between press and release
 #define RETRO_TAPPING
+
