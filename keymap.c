@@ -13,16 +13,19 @@
 enum custom_keycodes {
   PLACEHOLDER = SAFE_RANGE, // can always be here
   MON_SHIFT, // monitored shift; identical to shift, except stores current state
-  SPACE_ENTER
+  SPACE_ENTER,
+  PERSISTENT_LEFT, // left + goes to NUMB layer again
+  PERSISTENT_DOWN,
+  PERSISTENT_UP,
+  PERSISTENT_RIGHT,
 };
 
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
   [BASE] = LAYOUT_ergodox(
-
     // left hand
-    KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_F14,
+    KC_TRNS,KC_TRNS,KC_TRNS,KC_ESCAPE,KC_TRNS,KC_TRNS,KC_F14,
     KC_TRNS,KC_Q,KC_W,KC_E,KC_R,KC_T,KC_F13,
     KC_TAB,KC_A,KC_S,KC_D,KC_F,KC_G,
     OSM(MOD_LSFT),KC_Z,OSL(SYMB),KC_C,KC_V,KC_B,KC_F12,
@@ -33,18 +36,16 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_SPACE,OSM(MOD_LCTL),OSM(MOD_LALT),
     
     // right hand
-    KC_DELETE,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_MINUS,
+    KC_DELETE,KC_TRNS,KC_TRNS,KC_ENTER,KC_TRNS,KC_TRNS,KC_MINUS,
     KC_TRNS,KC_Y,KC_U,KC_I,KC_O,KC_P,KC_TILD,
     KC_H,KC_J,KC_K,KC_L,KC_X,KC_QUOTE,
     KC_TRNS,KC_N,KC_M,KC_COMMA,OSL(NUMB),KC_DOT,KC_SLASH,
-    KC_ESCAPE,KC_TRNS,TG(NUMB),KC_TRNS,KC_TRNS,
+    KC_ESCAPE,KC_TRNS,TG(NUMB),KC_TRNS,DEBUG,
     
     // thumb cluster 
-    KC_LEFT,KC_RIGHT,KC_UP,KC_DOWN,KC_ENTER,KC_BSPACE
-  
-  ),
-
-  [SYMB] = LAYOUT_ergodox(
+    KC_LEFT,KC_RIGHT,KC_UP,
+    KC_DOWN,KC_TRNS,KC_BSPACE
+  ), [SYMB] = LAYOUT_ergodox(
     // left hand
     KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
     KC_TRNS,KC_TRNS,KC_KP_ASTERISK,KC_LCBR,KC_RCBR,KC_DLR,KC_TRNS,
@@ -64,8 +65,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
     
     
-    KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS
-  
+    KC_TRNS,KC_TRNS,KC_TRNS,
+    KC_TRNS,KC_TRNS,KC_TRNS
   ),
 
   [NUMB] = LAYOUT_ergodox(
@@ -83,7 +84,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // right hand 
     KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,RESET,
     KC_TRNS,KC_0,KC_CIRC,KC_DLR,KC_ESCAPE,KC_TRNS,KC_TRNS,
-    KC_LEFT,KC_DOWN,KC_UP,KC_RIGHT,KC_TRNS,KC_TRNS,
+    PERSISTENT_LEFT,PERSISTENT_DOWN,PERSISTENT_UP,PERSISTENT_RIGHT,KC_TRNS,KC_TRNS,
     KC_TRNS,KC_TRNS,KC_ESCAPE,KC_TRNS,TO(BASE),KC_TRNS,KC_TRNS,
     KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
 
@@ -138,6 +139,7 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
   return MACRO_NONE;
 };
 
+uint8_t oneshot_mods;
 
 bool mon_shift_on = false;
 bool mon_shift_held = false;
@@ -235,6 +237,56 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       else{
         unregister_code(KC_SPACE);
         unregister_code(KC_ENTER);
+      }
+      return false;
+      break;
+
+    case PERSISTENT_LEFT:
+      if (record->event.pressed) {
+        print("persistent left pressed");
+        dprintf("persistent left pressed dprintf");
+        oneshot_mods = get_oneshot_mods();
+        register_code(KC_LEFT);
+        set_oneshot_mods(oneshot_mods);
+      }
+      else {
+        unregister_code(KC_LEFT);
+      }
+      return false;
+      break;
+
+    case PERSISTENT_DOWN:
+      if (record->event.pressed) {
+        oneshot_mods = get_oneshot_mods();
+        register_code(KC_DOWN);
+        set_oneshot_mods(oneshot_mods);
+      }
+      else {
+        unregister_code(KC_DOWN);
+      }
+      return false;
+      break;
+
+    case PERSISTENT_UP:
+      if (record->event.pressed) {
+        oneshot_mods = get_oneshot_mods();
+        register_code(KC_UP);
+        set_oneshot_mods(oneshot_mods);
+      }
+      else {
+        unregister_code(KC_UP);
+      }
+      return false;
+      break;
+
+    case PERSISTENT_RIGHT:
+      if (record->event.pressed) {
+        oneshot_mods = get_oneshot_mods();
+        register_code(KC_RIGHT);
+        set_oneshot_mods(oneshot_mods);
+      }
+      else {
+        unregister_code(KC_RIGHT);
       }
       return false;
       break;
