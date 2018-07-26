@@ -12,7 +12,6 @@
 
 enum custom_keycodes {
   PLACEHOLDER = SAFE_RANGE, // can always be here
-  MON_SHIFT, // monitored shift; identical to shift, except stores current state
   SPACE_ENTER,
   PERSISTENT_LEFT, // left + goes to NUMB layer again
   PERSISTENT_DOWN,
@@ -29,7 +28,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_TRNS,KC_Q,KC_W,KC_E,KC_R,KC_T,KC_F13,
     KC_TAB,KC_A,KC_S,KC_D,KC_F,KC_G,
     OSM(MOD_LSFT),KC_Z,OSL(SYMB),KC_C,KC_V,KC_B,KC_F12,
-    MON_SHIFT,TG(OVERWATCH),KC_TRNS,KC_TRNS,KC_LGUI,
+    KC_TRNS,TG(OVERWATCH),KC_TRNS,KC_TRNS,KC_LGUI,
 
     // thumb cluster
     KC_F15,KC_F16,KC_F17,
@@ -139,30 +138,27 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
   return MACRO_NONE;
 };
 
+
 uint8_t oneshot_layer;
 
-bool mon_shift_on = false;
-bool mon_shift_held = false;
-bool key_pressed = false;
+void persistent_key(keyrecord_t* record, uint16_t keycode){
+  if (record->event.pressed) {
+    oneshot_layer = get_oneshot_layer();
+    set_oneshot_layer(oneshot_layer, ONESHOT_START);
+    register_code(keycode);
+  }
+  else {
+    clear_oneshot_layer_state(ONESHOT_PRESSED);
+    unregister_code(keycode);
+  }
+}
 
-bool mon_shift_toggled_on = false;
-
-uint16_t mon_shift_first_press_time = 0; 
-uint16_t mon_shift_second_press_time = 0; 
 
 
-bool shift_led_on = false;
 bool lsft_on ; // is lsft already on
 bool shift_tapped = false; // flag to tell loop not to turn led back off if shift's been tapped
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-
-  if(!mon_shift_held && !mon_shift_toggled_on && key_pressed){
-    unregister_code(KC_LSFT);
-    mon_shift_on = false;
-    key_pressed = false;
-    ergodox_right_led_3_off();
-  }
 
   lsft_on = keyboard_report->mods & (MOD_BIT(KC_LSFT));
 
@@ -170,7 +166,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
   uprintf("keyboard_report: %u\n", keyboard_report);
   uprintf("keyboard_report->mods, %u\n", keyboard_report->mods);
   uprintf("record->event.pressed, %u\n", record->event.pressed);
-
 
   switch (keycode) {
     
@@ -191,142 +186,35 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       }
       break;
 
-    case MON_SHIFT:
-      if (record->event.pressed) {
-        // not on yet
-        if(!mon_shift_on){
-          register_code(KC_LSFT);
-          mon_shift_on = true;
-          mon_shift_held = true;
-          mon_shift_first_press_time = record->event.time;
-
-          ergodox_right_led_3_on();
-        }
-        // already on
-        else {
-          mon_shift_second_press_time = record->event.time; 
-
-          // toggled on, so cancel it
-          if(mon_shift_toggled_on){
-            unregister_code(KC_LSFT);
-            mon_shift_on = false;
-            mon_shift_held = false;
-            mon_shift_toggled_on = false;
-            ergodox_right_led_3_off();
-          }
-          else {
-            // if greater than timeout, cancel the one shot situation
-            if(mon_shift_second_press_time - mon_shift_first_press_time > 1000){
-              unregister_code(KC_LSFT);
-              mon_shift_on = false;
-              mon_shift_held = false;
-              mon_shift_toggled_on = false;
-              ergodox_right_led_3_off();
-            }
-            // if less than timeout (double tap) toggle it on
-            else {
-              ergodox_right_led_3_on();
-              mon_shift_on = true;
-              mon_shift_toggled_on = true;
-            }
-          }
-        }
-      }
-      // released
-      else {
-        // if it's just been toggled on (this block will execute after second tap in double tap
-        if(mon_shift_toggled_on){
-
-        }
-        // released from held mode
-        else {
-          mon_shift_held = false;
-
-          if(key_pressed){
-            unregister_code(KC_LSFT);
-            mon_shift_on = false;
-            key_pressed = false;
-            ergodox_right_led_3_off();
-          }
-        }
-      }
-
-      return false;
-      break;
-
     case SPACE_ENTER:
       if (record->event.pressed) {
-        if(mon_shift_on){
-          register_code(KC_ENTER);
-          key_pressed = true;
-        }
-        else{
-          register_code(KC_SPACE);
-        }
       }
       else{
-        unregister_code(KC_SPACE);
-        unregister_code(KC_ENTER);
       }
       return false;
       break;
 
     case PERSISTENT_LEFT:
-      if (record->event.pressed) {
-        oneshot_layer = get_oneshot_layer();
-        set_oneshot_layer(oneshot_layer, ONESHOT_START);
-        register_code(KC_LEFT);
-      }
-      else {
-        clear_oneshot_layer_state(ONESHOT_PRESSED);
-        unregister_code(KC_LEFT);
-      }
+      persistent_key(record, KC_LEFT);
       return false;
       break;
 
     case PERSISTENT_DOWN:
-      if (record->event.pressed) {
-        oneshot_layer = get_oneshot_layer();
-        set_oneshot_layer(oneshot_layer, ONESHOT_START);
-        register_code(KC_DOWN);
-      }
-      else {
-        clear_oneshot_layer_state(ONESHOT_PRESSED);
-        unregister_code(KC_DOWN);
-      }
+      persistent_key(record, KC_DOWN);
       return false;
       break;
 
     case PERSISTENT_UP:
-      if (record->event.pressed) {
-        oneshot_layer = get_oneshot_layer();
-        set_oneshot_layer(oneshot_layer, ONESHOT_START);
-        register_code(KC_UP);
-      }
-      else {
-        clear_oneshot_layer_state(ONESHOT_PRESSED);
-        unregister_code(KC_UP);
-      }
+      persistent_key(record, KC_UP);
       return false;
       break;
 
     case PERSISTENT_RIGHT:
-      if (record->event.pressed) {
-        oneshot_layer = get_oneshot_layer();
-        set_oneshot_layer(oneshot_layer, ONESHOT_START);
-        register_code(KC_RIGHT);
-      }
-      else {
-        clear_oneshot_layer_state(ONESHOT_PRESSED);
-        unregister_code(KC_RIGHT);
-      }
+      persistent_key(record, KC_RIGHT);
       return false;
       break;
 
     default:
-      if(mon_shift_on){
-        key_pressed = true;
-      }
       if(shift_tapped){
         shift_tapped = false;
       }
