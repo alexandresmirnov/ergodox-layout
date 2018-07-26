@@ -150,6 +150,11 @@ bool mon_shift_toggled_on = false;
 uint16_t mon_shift_first_press_time = 0; 
 uint16_t mon_shift_second_press_time = 0; 
 
+
+bool shift_led_on = false;
+bool lsft_on ; // is lsft already on
+bool shift_tapped = false; // flag to tell loop not to turn led back off if shift's been tapped
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
   if(!mon_shift_held && !mon_shift_toggled_on && key_pressed){
@@ -159,8 +164,33 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     ergodox_right_led_3_off();
   }
 
+  lsft_on = keyboard_report->mods & (MOD_BIT(KC_LSFT));
+
+  uprintf("\nkeycode: %u\n", keycode);
+  uprintf("keyboard_report: %u\n", keyboard_report);
+  uprintf("keyboard_report->mods, %u\n", keyboard_report->mods);
+  uprintf("record->event.pressed, %u\n", record->event.pressed);
+
+
   switch (keycode) {
     
+    // 0101 0101 0000 0010 (tap event for lsft key)
+    case 21762:
+      // press
+      if (record->event.pressed) {
+      }
+      // release
+      else {
+        if(!lsft_on){
+          ergodox_right_led_3_on();
+          shift_tapped = true;
+        }
+        else {
+          ergodox_right_led_3_off();
+        }
+      }
+      break;
+
     case MON_SHIFT:
       if (record->event.pressed) {
         // not on yet
@@ -243,8 +273,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
     case PERSISTENT_LEFT:
       if (record->event.pressed) {
-        print("persistent left pressed");
-        dprintf("persistent left pressed dprintf");
         oneshot_mods = get_oneshot_mods();
         register_code(KC_LEFT);
         set_oneshot_mods(oneshot_mods);
@@ -295,6 +323,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       if(mon_shift_on){
         key_pressed = true;
       }
+      if(shift_tapped){
+        shift_tapped = false;
+      }
       break;
   }
 
@@ -305,6 +336,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 // Runs just one time when the keyboard initializes.
 void matrix_init_user(void) {
+  debug_enable=true;
 #ifdef RGBLIGHT_COLOR_LAYER_0
   rgblight_setrgb(RGBLIGHT_COLOR_LAYER_0);
 #endif
@@ -312,7 +344,17 @@ void matrix_init_user(void) {
 
 // Runs constantly in the background, in a loop.
 void matrix_scan_user(void) {
+  lsft_on = keyboard_report->mods & (MOD_BIT(KC_LSFT));
 
+  if(lsft_on){
+    ergodox_right_led_3_on();
+  }
+  else if(shift_tapped){
+
+  }
+  else {
+    ergodox_right_led_3_off();
+  }
 };
 
 // Runs whenever there is a layer state change.
