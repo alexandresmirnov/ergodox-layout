@@ -139,7 +139,7 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
   return MACRO_NONE;
 };
 
-uint8_t oneshot_mods;
+uint8_t oneshot_layer;
 
 bool mon_shift_on = false;
 bool mon_shift_held = false;
@@ -273,11 +273,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
     case PERSISTENT_LEFT:
       if (record->event.pressed) {
-        oneshot_mods = get_oneshot_mods();
+        oneshot_layer = get_oneshot_layer();
+        set_oneshot_layer(oneshot_layer, ONESHOT_START);
         register_code(KC_LEFT);
-        set_oneshot_mods(oneshot_mods);
       }
       else {
+        clear_oneshot_layer_state(ONESHOT_PRESSED);
         unregister_code(KC_LEFT);
       }
       return false;
@@ -285,11 +286,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
     case PERSISTENT_DOWN:
       if (record->event.pressed) {
-        oneshot_mods = get_oneshot_mods();
+        oneshot_layer = get_oneshot_layer();
+        set_oneshot_layer(oneshot_layer, ONESHOT_START);
         register_code(KC_DOWN);
-        set_oneshot_mods(oneshot_mods);
       }
       else {
+        clear_oneshot_layer_state(ONESHOT_PRESSED);
         unregister_code(KC_DOWN);
       }
       return false;
@@ -297,11 +299,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
     case PERSISTENT_UP:
       if (record->event.pressed) {
-        oneshot_mods = get_oneshot_mods();
+        oneshot_layer = get_oneshot_layer();
+        set_oneshot_layer(oneshot_layer, ONESHOT_START);
         register_code(KC_UP);
-        set_oneshot_mods(oneshot_mods);
       }
       else {
+        clear_oneshot_layer_state(ONESHOT_PRESSED);
         unregister_code(KC_UP);
       }
       return false;
@@ -309,11 +312,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
     case PERSISTENT_RIGHT:
       if (record->event.pressed) {
-        oneshot_mods = get_oneshot_mods();
+        oneshot_layer = get_oneshot_layer();
+        set_oneshot_layer(oneshot_layer, ONESHOT_START);
         register_code(KC_RIGHT);
-        set_oneshot_mods(oneshot_mods);
       }
       else {
+        clear_oneshot_layer_state(ONESHOT_PRESSED);
         unregister_code(KC_RIGHT);
       }
       return false;
