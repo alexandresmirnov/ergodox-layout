@@ -8,7 +8,8 @@
 #define BASE 0 // default layer
 #define SYMB 1 // symbols
 #define NUMB 2 // control keys (and numpad on left side)
-#define OVERWATCH 3 // overwatch layer
+#define ARROWS 3 // only arrow keys (persistent) 
+#define OVERWATCH 4 // overwatch layer
 
 enum custom_keycodes {
   PLACEHOLDER = SAFE_RANGE, // can always be here
@@ -86,6 +87,30 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_TRNS,KC_0,KC_CIRC,KC_DLR,KC_ESCAPE,KC_TRNS,KC_TRNS,
     PERSISTENT_LEFT,PERSISTENT_DOWN,PERSISTENT_UP,PERSISTENT_RIGHT,KC_TRNS,KC_TRNS,
     KC_TRNS,KC_TRNS,KC_ESCAPE,KC_TRNS,TO(BASE),KC_TRNS,KC_TRNS,
+    KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
+
+    // thumb cluster
+    KC_TRNS,KC_TRNS,KC_TRNS,
+    KC_TRNS,KC_TRNS,KC_TRNS
+  ),
+
+  [ARROWS] = LAYOUT_ergodox(
+    // left hand
+    KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
+    KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
+    KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
+    KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
+    KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
+    
+    // thumb cluster
+    KC_TRNS,KC_TRNS,KC_TRNS,
+    KC_TRNS,KC_TRNS,KC_TRNS,
+    
+    // right hand 
+    KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
+    KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
+    PERSISTENT_LEFT,PERSISTENT_DOWN,PERSISTENT_UP,PERSISTENT_RIGHT,KC_TRNS,KC_TRNS,
+    KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,TO(BASE),KC_TRNS,KC_TRNS,
     KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
 
     // thumb cluster
@@ -260,6 +285,10 @@ uint32_t layer_state_set_user(uint32_t state) {
       case NUMB:
         ergodox_right_led_2_on();
         break;
+      case ARROWS:
+        ergodox_right_led_1_on();
+        ergodox_right_led_2_on();
+        break;
       case OVERWATCH:
         ergodox_right_led_1_set(LED_BRIGHTNESS_LO);
         ergodox_right_led_1_on();
@@ -267,10 +296,6 @@ uint32_t layer_state_set_user(uint32_t state) {
         ergodox_right_led_2_on();
         ergodox_right_led_3_set(LED_BRIGHTNESS_LO);
         ergodox_right_led_3_on();
-        break;
-      case 4:
-        ergodox_right_led_1_on();
-        ergodox_right_led_2_on();
         break;
       case 5:
         ergodox_right_led_1_on();
