@@ -17,6 +17,7 @@ enum custom_keycodes {
   PERSISTENT_DOWN,
   PERSISTENT_UP,
   PERSISTENT_RIGHT,
+  DOT_DOT_SLASH,
 };
 
 
@@ -62,7 +63,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
     KC_TRNS,KC_TRNS,KC_MINUS,KC_UNDS,KC_PIPE,KC_TRNS,KC_TRNS,
     KC_AT,KC_COLN,KC_EQUAL,KC_SCOLON,KC_CIRC,KC_GRAVE,
-    KC_TRNS,KC_AMPR,KC_HASH,KC_PERC,KC_PLUS,KC_EXLM,KC_TRNS,
+    KC_TRNS,KC_AMPR,KC_HASH,KC_PERC,KC_PLUS,KC_EXLM,DOT_DOT_SLASH,
     KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,KC_TRNS,
     
     
@@ -169,8 +170,8 @@ uint8_t oneshot_layer;
 
 void persistent_key(keyrecord_t* record, uint16_t keycode){
   if (record->event.pressed) {
-    oneshot_layer = get_oneshot_layer();
-    set_oneshot_layer(oneshot_layer, ONESHOT_START);
+    clear_oneshot_layer_state(ONESHOT_OTHER_KEY_PRESSED);
+    set_oneshot_layer(ARROWS, ONESHOT_START);
     register_code(keycode);
   }
   else {
@@ -229,6 +230,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
     case PERSISTENT_RIGHT:
       persistent_key(record, KC_RIGHT);
+      return false;
+      break;
+
+    case DOT_DOT_SLASH:
+      if (record->event.pressed) {
+          SEND_STRING("../");
+          clear_oneshot_layer_state(ONESHOT_OTHER_KEY_PRESSED);
+      }
       return false;
       break;
 
