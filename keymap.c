@@ -185,6 +185,8 @@ void persistent_key(keyrecord_t* record, uint16_t keycode){
 bool lsft_on ; // is lsft already on
 bool shift_tapped = false; // flag to tell loop not to turn led back off if shift's been tapped
 
+bool osm_shifted_key_pressed = false;
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
   lsft_on = keyboard_report->mods & (MOD_BIT(KC_LSFT));
@@ -200,6 +202,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case 21762:
       // press
       if (record->event.pressed) {
+          osm_shifted_key_pressed = false;
       }
       // release
       else {
@@ -242,6 +245,19 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       break;
 
     default:
+      if (record->event.pressed) {
+          if(osm_shifted_key_pressed){
+              // fixes issue on mac where if a OSM'ed key is still held down while another 
+              // is pressed, the second will have the same modifier applied
+              // resulting in e.g. THe instead of The because T is still down while H
+              // is pressed.
+              unregister_code(KC_LSHIFT);
+          }
+
+          if((get_oneshot_mods() == 2) && !has_oneshot_mods_timed_out()) {
+              osm_shifted_key_pressed = true;
+          }
+      }
       if(shift_tapped){
         shift_tapped = false;
       }
