@@ -292,6 +292,11 @@ void matrix_scan_user(void) {
 
 // Runs whenever there is a layer state change.
 uint32_t layer_state_set_user(uint32_t state) {
+
+  // reset OSMs
+  clear_oneshot_mods();
+
+  // reset lights
   ergodox_board_led_off();
   ergodox_right_led_1_set(LED_BRIGHTNESS_HI);
   ergodox_right_led_1_off();
