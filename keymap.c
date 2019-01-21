@@ -19,6 +19,7 @@ enum custom_keycodes {
   PERSISTENT_UP,
   PERSISTENT_RIGHT,
   DOT_DOT_SLASH,
+  TAP_TOG_LAYER,
 };
 
 
@@ -30,7 +31,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_TRNS,KC_Q,KC_W,KC_E,KC_R,KC_T,KC_F13,
     KC_TAB,KC_A,KC_S,KC_D,KC_F,KC_G,
     OSM(MOD_LSFT),KC_Z,OSL(SYMB),KC_C,KC_V,KC_B,KC_F12,
-    KC_TRNS,TG(OVERWATCH),TO(VANILLA),KC_RALT,KC_LGUI,
+    TAP_TOG_LAYER,TG(OVERWATCH),TO(VANILLA),KC_RALT,KC_LGUI,
 
     // thumb cluster
     KC_F15,KC_F16,KC_F17,
@@ -193,8 +194,10 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
 
 uint8_t oneshot_layer;
 
+// used for h,j,k,l to re-trigger oneshot inside the arrows layer
 void persistent_key(keyrecord_t* record, uint16_t keycode){
   if (record->event.pressed) {
+    // reset oneshot layer
     clear_oneshot_layer_state(ONESHOT_OTHER_KEY_PRESSED);
     set_oneshot_layer(ARROWS, ONESHOT_START);
     register_code(keycode);
@@ -207,10 +210,15 @@ void persistent_key(keyrecord_t* record, uint16_t keycode){
 
 
 
+// shift hooks
 bool lsft_on ; // is lsft already on
 bool shift_tapped = false; // flag to tell loop not to turn led back off if shift's been tapped
 
-bool osm_shifted_key_pressed = false;
+bool osm_shifted_key_pressed = false; // set to true if any key pressed while shift held down
+
+// TAP_TOG_LAYER magic
+bool tap_tog_layer_other_key_pressed = false; // set to true if any key pressed while TAP_TOG_LAYER held down
+bool tap_tog_layer_is_off_button = false; // will become true if no keys are pressed while TTL held down
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
@@ -239,6 +247,93 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           ergodox_right_led_3_off();
         }
       }
+      break;
+
+      /*
+       is_off_button = false
+       other_key_pressed = false
+
+       pressed down handler:
+
+          // this branch means it has already been pressed and we've toggled into that layer
+          // so now we need to leave
+          if is_off_button {
+            switch_layer_back() 
+          }
+          // this means we're in our default layer
+          // so switch the layer immediately
+          // whether we'll switch back when it's released depends on if a button gets pressed while this is held down
+          else {
+              switch_layer()
+              other_key_pressed = false
+          }
+
+       released handler:
+       
+           // this branch is if it was used as a held modifier (like traditional shift)
+           if other_key_pressed {
+              switch_layer_back()
+           }
+           // if it was used as a toggle button
+           else {
+              // keep layer switched
+           }
+
+        pressed down handler for all keys:
+            other_key_pressed = true
+
+       
+          
+       */
+
+
+    case TAP_TOG_LAYER:
+
+      // press
+      if (record->event.pressed) {
+        uprintf("TTL pressed\n");
+        uprintf("is_off_button: %d\n", tap_tog_layer_is_off_button);
+        uprintf("other_key_pressed: %d\n", tap_tog_layer_other_key_pressed);
+        // this branch means it has already been pressed and we've toggled into that layer
+        // so now we need to leave
+        if(tap_tog_layer_is_off_button) {
+          // switch layer back
+          uprintf("switching layer back\n");
+          layer_off(SYMB);
+          layer_clear();
+          tap_tog_layer_is_off_button = false;
+        }
+        // this means we're in our default layer
+        // so switch the layer immediately
+        // whether we'll switch back when it's released depends on if a button gets pressed while this is held down
+        else {
+          // switch layer
+          layer_on(SYMB);
+          uprintf("switching layer on\n");
+          tap_tog_layer_other_key_pressed = false;
+        }
+      }
+      // release
+      else {
+        uprintf("TTL released\n");
+        uprintf("is_off_button: %d\n", tap_tog_layer_is_off_button);
+        uprintf("other_key_pressed: %d\n", tap_tog_layer_other_key_pressed);
+        // this branch is if it was used as a held modifier (like traditional shift)
+        if(tap_tog_layer_other_key_pressed) {
+          // switch layer back
+          uprintf("switching layer back\n");
+          layer_off(SYMB);
+          layer_clear();
+        }
+        // if it was used as a toggle button
+        else {
+          // next time, it will turn layer off
+          tap_tog_layer_is_off_button = true;
+        }
+
+      }
+
+      return false;
       break;
 
     case PERSISTENT_LEFT:
@@ -270,6 +365,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       break;
 
     default:
+      tap_tog_layer_other_key_pressed = true; // always set this to true, TAP_TOG_LAYER handlers will handle interpreting this
+
+      // shift magic
       if (record->event.pressed) {
           if(osm_shifted_key_pressed){
               // fixes issue on mac where if a OSM'ed key is still held down while another 
@@ -279,6 +377,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
               unregister_code(KC_LSHIFT);
           }
 
+          // get_oneshot_mods() returns 2 if shift OSM is on, this is hardcoded in tmk_core/common/action_code.h in the mods_bit enum
           if((get_oneshot_mods() == 2) && !has_oneshot_mods_timed_out()) {
               osm_shifted_key_pressed = true;
           }
