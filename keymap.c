@@ -31,7 +31,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_TRNS,KC_Q,KC_W,KC_E,KC_R,KC_T,KC_F13,
     KC_TAB,KC_A,KC_S,KC_D,KC_F,KC_G,
     OSM(MOD_LSFT),KC_Z,OSL(SYMB),KC_C,KC_V,KC_B,KC_F12,
-    TAP_TOG_LAYER,TG(OVERWATCH),TO(VANILLA),KC_RALT,KC_LGUI,
+    KC_TRNS,TG(OVERWATCH),TO(VANILLA),KC_RALT,KC_LGUI,
 
     // thumb cluster
     KC_F15,KC_F16,KC_F17,
@@ -218,7 +218,7 @@ bool osm_shifted_key_pressed = false; // set to true if any key pressed while sh
 
 // TAP_TOG_LAYER magic
 bool tap_tog_layer_other_key_pressed = false; // set to true if any key pressed while TAP_TOG_LAYER held down
-bool tap_tog_layer_is_off_button = false; // will become true if no keys are pressed while TTL held down
+bool tap_tog_layer_toggled_on = false; // will become true if no keys are pressed while TTL held down
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
@@ -249,59 +249,20 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       }
       break;
 
-      /*
-       is_off_button = false
-       other_key_pressed = false
-
-       pressed down handler:
-
-          // this branch means it has already been pressed and we've toggled into that layer
-          // so now we need to leave
-          if is_off_button {
-            switch_layer_back() 
-          }
-          // this means we're in our default layer
-          // so switch the layer immediately
-          // whether we'll switch back when it's released depends on if a button gets pressed while this is held down
-          else {
-              switch_layer()
-              other_key_pressed = false
-          }
-
-       released handler:
-       
-           // this branch is if it was used as a held modifier (like traditional shift)
-           if other_key_pressed {
-              switch_layer_back()
-           }
-           // if it was used as a toggle button
-           else {
-              // keep layer switched
-           }
-
-        pressed down handler for all keys:
-            other_key_pressed = true
-
-       
-          
-       */
-
-
     case TAP_TOG_LAYER:
 
       // press
       if (record->event.pressed) {
         uprintf("TTL pressed\n");
-        uprintf("is_off_button: %d\n", tap_tog_layer_is_off_button);
+        uprintf("toggled_on: %d\n", tap_tog_layer_toggled_on);
         uprintf("other_key_pressed: %d\n", tap_tog_layer_other_key_pressed);
-        // this branch means it has already been pressed and we've toggled into that layer
+        // TTL has already been pressed and we are toggled into that layer
         // so now we need to leave
-        if(tap_tog_layer_is_off_button) {
+        if(tap_tog_layer_toggled_on) {
           // switch layer back
           uprintf("switching layer back\n");
-          layer_off(SYMB);
           layer_clear();
-          tap_tog_layer_is_off_button = false;
+          tap_tog_layer_toggled_on = false;
         }
         // this means we're in our default layer
         // so switch the layer immediately
@@ -310,25 +271,24 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           // switch layer
           layer_on(SYMB);
           uprintf("switching layer on\n");
-          tap_tog_layer_other_key_pressed = false;
+          tap_tog_layer_other_key_pressed = false; // if this becomes true before it gets released, it will act as a held modifier
         }
       }
       // release
       else {
         uprintf("TTL released\n");
-        uprintf("is_off_button: %d\n", tap_tog_layer_is_off_button);
+        uprintf("toggled_on: %d\n", tap_tog_layer_toggled_on);
         uprintf("other_key_pressed: %d\n", tap_tog_layer_other_key_pressed);
-        // this branch is if it was used as a held modifier (like traditional shift)
+        // if it was used as a held modifier (like traditional shift)
         if(tap_tog_layer_other_key_pressed) {
           // switch layer back
           uprintf("switching layer back\n");
-          layer_off(SYMB);
           layer_clear();
         }
         // if it was used as a toggle button
         else {
           // next time, it will turn layer off
-          tap_tog_layer_is_off_button = true;
+          tap_tog_layer_toggled_on = true;
         }
 
       }
